@@ -784,7 +784,7 @@ public class GraphicsLibSettings {
 
     public static boolean enableFullExplosionEffects() {
         if (useLunaLib) {
-            final String radioStr = LunaSettings.getString("shaderLib", "enableFullExplosionEffects");
+            final String radioStr = LunaSettings.getString("shaderLib", "enableExplosionEffects");
             if (radioStr != null) {
                 switch (radioStr) {
                     default:

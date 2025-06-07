@@ -1235,7 +1235,7 @@ public final class ShaderLib {
         TextureEntry entry = null;
 
         final CombatEngineAPI engine = Global.getCombatEngine();
-        Map<String, Object> customData = null;
+        Map<String, Object> customData;
         Map<ShipAPI, String> shipTexOvd = null;
         if (engine != null) {
             customData = engine.getCustomData();
@@ -1274,7 +1274,7 @@ public final class ShaderLib {
             }
         }
 
-        if ((engine != null) && (customData != null) && (shipTexOvd != null)) {
+        if ((engine != null) && (shipTexOvd != null)) {
             final String ovdId = shipTexOvd.get(ship);
             if (ovdId != null) {
                 entry = TextureData.getTextureDataWithAutoGen(ovdId, type, ObjectType.SHIP, 0, ship, false);
@@ -1387,7 +1387,7 @@ public final class ShaderLib {
         }
 
         final CombatEngineAPI engine = Global.getCombatEngine();
-        Map<String, Object> customData = null;
+        Map<String, Object> customData;
         Map<WeaponAPI, String> wpnTexOvd = null;
         if (engine != null) {
             customData = engine.getCustomData();
@@ -1422,7 +1422,7 @@ public final class ShaderLib {
             entry = TextureData.getTextureData(weapon.getId(), texType, objType, 0);
         }
 
-        if ((engine != null) && (customData != null) && (wpnTexOvd != null)) {
+        if ((engine != null) && (wpnTexOvd != null)) {
             final String ovdId = wpnTexOvd.get(weapon);
             if (ovdId != null) {
                 entry = TextureData.getTextureDataWithAutoGen(ovdId, texType, objType, frame, weapon, false);

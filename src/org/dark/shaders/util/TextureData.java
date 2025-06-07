@@ -178,7 +178,7 @@ public class TextureData {
                                                 autoGen &= !wingSpec.hasTag(NO_AUTOGEN_TAG);
                                             }
                                             final ShipAPI sourceShip = wing.getSourceShip();
-                                            if (sourceShip == null) {
+                                            if (sourceShip != null) {
                                                 String skinSpriteName = getFighterSkinSpriteName(ship, sourceShip);
                                                 if ((skinSpriteName != null) && !skinSpriteName.isEmpty()) {
                                                     spriteName = skinSpriteName;
@@ -1011,6 +1011,18 @@ public class TextureData {
 
                     TextureEntry shipTexEntry = null;
                     if (entry.fighterSpriteKey != null) {
+                        shipTexEntry = getTextureDataWithAutoGen(entry.fighterSpriteKey, type, ObjectType.SHIP, 0, null, true);
+                    }
+                    if (shipTexEntry == null) {
+                        shipTexEntry = getTextureDataWithAutoGen(hullSpec.getHullId(), type, ObjectType.SHIP, 0, null, true);
+                    }
+                    if (shipTexEntry == null) {
+                        shipTexEntry = getTextureDataWithAutoGen(hullSpec.getDParentHullId(), type, ObjectType.SHIP, 0, null, true);
+                    }
+                    if (shipTexEntry == null) {
+                        shipTexEntry = getTextureDataWithAutoGen(hullSpec.getBaseHullId(), type, ObjectType.SHIP, 0, null, true);
+                    }
+                    if (entry.fighterSpriteKey != null) {
                         shipTexEntry = getTextureDataWithAutoGen(entry.fighterSpriteKey, type, ObjectType.SHIP, 0, autoGen, true);
                     }
                     if (shipTexEntry == null) {
@@ -1122,31 +1134,94 @@ public class TextureData {
                             numFrames = 0;
                         }
                         for (int frame = 0; frame <= numFrames; frame++) {
-                            final TextureEntry weaponTexEntry;
+                            TextureEntry weaponTexEntry;
                             if (slot.isHardpoint()) {
-                                weaponTexEntry = TextureData.getTextureDataWithAutoGen(hardpointId, type, ObjectType.HARDPOINT, frame, autoGen, true);
+                                weaponTexEntry = TextureData.getTextureDataWithAutoGen(hardpointId, type, ObjectType.HARDPOINT, frame, null, true);
                             } else {
-                                weaponTexEntry = TextureData.getTextureDataWithAutoGen(turretId, type, ObjectType.TURRET, frame, autoGen, true);
+                                weaponTexEntry = TextureData.getTextureDataWithAutoGen(turretId, type, ObjectType.TURRET, frame, null, true);
+                            }
+                            if (weaponTexEntry == null) {
+                                if (slot.isHardpoint()) {
+                                    weaponTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.HARDPOINT, frame, null, true);
+                                } else {
+                                    weaponTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.TURRET, frame, null, true);
+                                }
+                            }
+                            if (weaponTexEntry == null) {
+                                if (slot.isHardpoint()) {
+                                    weaponTexEntry = TextureData.getTextureDataWithAutoGen(hardpointId, type, ObjectType.HARDPOINT, frame, autoGen, true);
+                                } else {
+                                    weaponTexEntry = TextureData.getTextureDataWithAutoGen(turretId, type, ObjectType.TURRET, frame, autoGen, true);
+                                }
+                            }
+                            if (weaponTexEntry == null) {
+                                if (slot.isHardpoint()) {
+                                    weaponTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.HARDPOINT, frame, autoGen, true);
+                                } else {
+                                    weaponTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.TURRET, frame, autoGen, true);
+                                }
                             }
                             if (weaponTexEntry != null) {
                                 keptEntries.add(weaponTexEntry);
                             }
 
-                            final TextureEntry weaponBarrelTexEntry;
+                            TextureEntry weaponBarrelTexEntry;
                             if (slot.isHardpoint()) {
-                                weaponBarrelTexEntry = TextureData.getTextureDataWithAutoGen(hardpointBarrelId, type, ObjectType.HARDPOINT_BARREL, frame, autoGen, true);
+                                weaponBarrelTexEntry = TextureData.getTextureDataWithAutoGen(hardpointBarrelId, type, ObjectType.HARDPOINT_BARREL, frame, null, true);
                             } else {
-                                weaponBarrelTexEntry = TextureData.getTextureDataWithAutoGen(turretBarrelId, type, ObjectType.TURRET_BARREL, frame, autoGen, true);
+                                weaponBarrelTexEntry = TextureData.getTextureDataWithAutoGen(turretBarrelId, type, ObjectType.TURRET_BARREL, frame, null, true);
+                            }
+                            if (weaponTexEntry == null) {
+                                if (slot.isHardpoint()) {
+                                    weaponBarrelTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.HARDPOINT_BARREL, frame, null, true);
+                                } else {
+                                    weaponBarrelTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.TURRET_BARREL, frame, null, true);
+                                }
+                            }
+                            if (weaponTexEntry == null) {
+                                if (slot.isHardpoint()) {
+                                    weaponBarrelTexEntry = TextureData.getTextureDataWithAutoGen(hardpointBarrelId, type, ObjectType.HARDPOINT_BARREL, frame, autoGen, true);
+                                } else {
+                                    weaponBarrelTexEntry = TextureData.getTextureDataWithAutoGen(turretBarrelId, type, ObjectType.TURRET_BARREL, frame, autoGen, true);
+                                }
+                            }
+                            if (weaponTexEntry == null) {
+                                if (slot.isHardpoint()) {
+                                    weaponBarrelTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.HARDPOINT_BARREL, frame, autoGen, true);
+                                } else {
+                                    weaponBarrelTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.TURRET_BARREL, frame, autoGen, true);
+                                }
                             }
                             if (weaponBarrelTexEntry != null) {
                                 keptEntries.add(weaponBarrelTexEntry);
                             }
 
-                            final TextureEntry weaponUnderTexEntry;
+                            TextureEntry weaponUnderTexEntry;
                             if (slot.isHardpoint()) {
-                                weaponUnderTexEntry = TextureData.getTextureDataWithAutoGen(underId, type, ObjectType.HARDPOINT_UNDER, frame, autoGen, true);
+                                weaponUnderTexEntry = TextureData.getTextureDataWithAutoGen(underId, type, ObjectType.HARDPOINT_UNDER, frame, null, true);
                             } else {
-                                weaponUnderTexEntry = TextureData.getTextureDataWithAutoGen(underId, type, ObjectType.TURRET_UNDER, frame, autoGen, true);
+                                weaponUnderTexEntry = TextureData.getTextureDataWithAutoGen(underId, type, ObjectType.TURRET_UNDER, frame, null, true);
+                            }
+                            if (weaponTexEntry == null) {
+                                if (slot.isHardpoint()) {
+                                    weaponUnderTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.HARDPOINT_UNDER, frame, null, true);
+                                } else {
+                                    weaponUnderTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.TURRET_UNDER, frame, null, true);
+                                }
+                            }
+                            if (weaponTexEntry == null) {
+                                if (slot.isHardpoint()) {
+                                    weaponUnderTexEntry = TextureData.getTextureDataWithAutoGen(underId, type, ObjectType.HARDPOINT_UNDER, frame, autoGen, true);
+                                } else {
+                                    weaponUnderTexEntry = TextureData.getTextureDataWithAutoGen(underId, type, ObjectType.TURRET_UNDER, frame, autoGen, true);
+                                }
+                            }
+                            if (weaponTexEntry == null) {
+                                if (slot.isHardpoint()) {
+                                    weaponUnderTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.HARDPOINT_UNDER, frame, autoGen, true);
+                                } else {
+                                    weaponUnderTexEntry = TextureData.getTextureDataWithAutoGen(weaponId, type, ObjectType.TURRET_UNDER, frame, autoGen, true);
+                                }
                             }
                             if (weaponUnderTexEntry != null) {
                                 keptEntries.add(weaponUnderTexEntry);

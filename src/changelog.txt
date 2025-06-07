@@ -1,3 +1,8 @@
+Version 1.12.2 (Unreleased)
+- Fixed logger spam & "Extreme" explosion option
+- Fixed rare crash with detached fighter wings
+- Improved preloading logic when dealing with skins of (mostly) vanilla hulls/weapons
+
 Version 1.12.1 (May 23, 2025)
 - Enhanced AA Compatibility Mode when LunaLib is enabled
 

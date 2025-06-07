@@ -176,9 +176,13 @@ public class ShipDestructionEffects extends BaseEveryFrameCombatPlugin {
 
             float explosionScale = ship.getExplosionScale();
             boolean dweller = false;
+            boolean omega = false;
             if (ship.getHullStyleId().contentEquals("DWELLER")) {
                 explosionScale = 1f;
                 dweller = true;
+            }
+            if (ship.getHullStyleId().contentEquals("OMEGA")) {
+                omega = true;
             }
 
             if (!ship.isAlive() && !ship.isFinishedLanding() && (ship.getHullLevel() <= 0.01)) {
@@ -268,7 +272,7 @@ public class ShipDestructionEffects extends BaseEveryFrameCombatPlugin {
                         LightShader.addLight(light);
                     }
 
-                    if (GraphicsLibSettings.enableExplosionTrails() && !ship.isShuttlePod() && !ship.isDrone() && !dweller) {
+                    if (GraphicsLibSettings.enableExplosionTrails() && !ship.isShuttlePod() && !ship.isDrone() && !dweller && !omega) {
                         int count = (int) (shipRadius * explosionScale * EXPLOSION_SIZE_MOD.get(shipHullSize) / 4f);
                         float length = EXPLOSION_LENGTH.get(shipHullSize) * ((float) Math.random() * 0.5f + 0.75f);
                         if (ship.isPiece()) {
