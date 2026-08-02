@@ -68,6 +68,7 @@ public class TextureData {
     private static boolean invalidateCache = true;
     private static boolean everTraversedSpecs = false;
     private static boolean everPerformedAutoGen = false;
+    private static boolean collectAutoGenRequests = false;
 
     private static final Map<String, TextureEntry> materialKeyToEntry = new LinkedHashMap<>(1000);
     private static final Map<String, TextureEntry> materialSpriteNameToEntry = new HashMap<>(1000);
@@ -79,6 +80,8 @@ public class TextureData {
     private static final Map<String, String> baseHullIdToHullStyle = new HashMap<>(1000);
     private static final Map<String, Integer> weaponIdToAnimFrames = new HashMap<>(1000);
     private static final Set<String> allHullStyles = new LinkedHashSet<>();
+    private static final Map<String, JSONObject> traversalJsonCache = new HashMap<>(1000);
+    private static final Map<String, AutoGenRequest> pendingAutoGen = new LinkedHashMap<>(1000);
 
     private static int wastedBytesTotal = 0;
     private static final Set<String> consideredSprites = new HashSet<>(1000);
@@ -900,7 +903,12 @@ public class TextureData {
          * texture data CSV.
          */
         if (!everTraversedSpecs) {
-            autoGenMissingNormalMapsInner(false);
+            collectAutoGenRequests = GraphicsLibSettings.autoGenNormals() && isLoadNormal();
+            try {
+                autoGenMissingNormalMapsInner(false);
+            } finally {
+                collectAutoGenRequests = false;
+            }
             everTraversedSpecs = true;
 
             if (CHECK_INEFFICIENT) {
@@ -908,7 +916,16 @@ public class TextureData {
             }
         }
         if (GraphicsLibSettings.autoGenNormals() && isLoadNormal() && !everPerformedAutoGen) {
-            autoGenMissingNormalMapsInner(true);
+            int count = 0;
+            for (AutoGenRequest request : pendingAutoGen.values()) {
+                mapSpriteToMNSWithAutoGen(request.key, request.spriteName, request.type, request.frame,
+                        true, request.autoGenOverride);
+                count++;
+                if ((count % 100) == 0) {
+                    ShaderModPlugin.refresh();
+                }
+            }
+            pendingAutoGen.clear();
             try {
                 Global.getSettings().writeTextFileToCommon(CACHE_HASH_FILE, "" + modVersionHash);
             } catch (IOException e) {
@@ -1505,13 +1522,9 @@ public class TextureData {
 
     private static void autoGenMissingNormalMapsInner(boolean autoGen) {
         int count = 0;
+        final boolean requestAutoGen = autoGen || collectAutoGenRequests;
 
-        JSONObject styleJson;
-        try {
-            styleJson = Global.getSettings().loadJSON("data/config/hull_styles.json", true);
-        } catch (IOException | JSONException | RuntimeException ex) {
-            styleJson = null;
-        }
+        JSONObject styleJson = loadTraversalJson("data/config/hull_styles.json", true);
         if (styleJson != null) {
             final Iterator iter = styleJson.keys();
             while (iter.hasNext()) {
@@ -1538,7 +1551,7 @@ public class TextureData {
                         Global.getLogger(TextureData.class).log(Level.ERROR, "JSON error for hull style " + key + ": " + e.getMessage());
                         continue;
                     }
-                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.TURRET_COVER_SMALL, 0, autoGen, false);
+                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.TURRET_COVER_SMALL, 0, requestAutoGen, false);
                 }
                 if (styleJsonObj.has("slotCoverSmallHardpoint")) {
                     final String spriteName;
@@ -1548,7 +1561,7 @@ public class TextureData {
                         Global.getLogger(TextureData.class).log(Level.ERROR, "JSON error for hull style " + key + ": " + e.getMessage());
                         continue;
                     }
-                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.HARDPOINT_COVER_SMALL, 0, autoGen, false);
+                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.HARDPOINT_COVER_SMALL, 0, requestAutoGen, false);
                 }
                 if (styleJsonObj.has("slotCoverMediumTurret")) {
                     final String spriteName;
@@ -1558,7 +1571,7 @@ public class TextureData {
                         Global.getLogger(TextureData.class).log(Level.ERROR, "JSON error for hull style " + key + ": " + e.getMessage());
                         continue;
                     }
-                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.TURRET_COVER_MEDIUM, 0, autoGen, false);
+                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.TURRET_COVER_MEDIUM, 0, requestAutoGen, false);
                 }
                 if (styleJsonObj.has("slotCoverMediumHardpoint")) {
                     final String spriteName;
@@ -1568,7 +1581,7 @@ public class TextureData {
                         Global.getLogger(TextureData.class).log(Level.ERROR, "JSON error for hull style " + key + ": " + e.getMessage());
                         continue;
                     }
-                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.HARDPOINT_COVER_MEDIUM, 0, autoGen, false);
+                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.HARDPOINT_COVER_MEDIUM, 0, requestAutoGen, false);
                 }
                 if (styleJsonObj.has("slotCoverLargeTurret")) {
                     final String spriteName;
@@ -1578,7 +1591,7 @@ public class TextureData {
                         Global.getLogger(TextureData.class).log(Level.ERROR, "JSON error for hull style " + key + ": " + e.getMessage());
                         continue;
                     }
-                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.TURRET_COVER_LARGE, 0, autoGen, false);
+                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.TURRET_COVER_LARGE, 0, requestAutoGen, false);
                 }
                 if (styleJsonObj.has("slotCoverLargeHardpoint")) {
                     final String spriteName;
@@ -1588,7 +1601,7 @@ public class TextureData {
                         Global.getLogger(TextureData.class).log(Level.ERROR, "JSON error for hull style " + key + ": " + e.getMessage());
                         continue;
                     }
-                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.HARDPOINT_COVER_LARGE, 0, autoGen, false);
+                    mapSpriteToMNSWithAutoGen(key, spriteName, ObjectType.HARDPOINT_COVER_LARGE, 0, requestAutoGen, false);
                 }
 
                 count++;
@@ -1610,7 +1623,7 @@ public class TextureData {
             final String key = hullSpec.getHullId();
 
             boolean autoGenOverride = hullSpec.hasTag(AUTOGEN_OVERRIDE_TAG);
-            boolean autoGenThisHull = autoGen && !hullSpec.hasTag(NO_AUTOGEN_TAG);
+            boolean autoGenThisHull = requestAutoGen && !hullSpec.hasTag(NO_AUTOGEN_TAG);
             boolean isFighter = false;
             if (hullSpec.getHullSize() == HullSize.FIGHTER) {
                 for (FighterWingSpecAPI wingSpec : Global.getSettings().getAllFighterWingSpecs()) {
@@ -1645,12 +1658,7 @@ public class TextureData {
 
             final String baseHull = hullSpec.getBaseHullId();
             if (!baseHullIdToHullStyle.containsKey(baseHull)) {
-                JSONObject shipJson;
-                try {
-                    shipJson = Global.getSettings().loadJSON("data/hulls/" + baseHull + ".ship");
-                } catch (IOException | JSONException | RuntimeException ex) {
-                    shipJson = null;
-                }
+                JSONObject shipJson = loadTraversalJson("data/hulls/" + baseHull + ".ship", false);
                 if (shipJson != null) {
                     if (shipJson.has("style")) {
                         String style;
@@ -1677,7 +1685,7 @@ public class TextureData {
             final String key = weaponSpec.getWeaponId();
 
             final boolean autoGenOverride = weaponSpec.hasTag(AUTOGEN_OVERRIDE_TAG);
-            final boolean autoGenThisWeapon = autoGen && !weaponSpec.hasTag(NO_AUTOGEN_TAG);
+            final boolean autoGenThisWeapon = requestAutoGen && !weaponSpec.hasTag(NO_AUTOGEN_TAG);
 
             final String turretSpriteName = weaponSpec.getTurretSpriteName();
             mapSpriteToMNSWithAutoGen(key, turretSpriteName, ObjectType.TURRET, 0, autoGenThisWeapon, autoGenOverride);
@@ -1688,18 +1696,9 @@ public class TextureData {
             final String hardpointUnderSpriteName = weaponSpec.getHardpointUnderSpriteName();
             mapSpriteToMNSWithAutoGen(key, hardpointUnderSpriteName, ObjectType.HARDPOINT_UNDER, 0, autoGenThisWeapon, autoGenOverride);
 
-            JSONObject weaponJson;
-            try {
-                weaponJson = Global.getSettings().loadJSON("data/weapons/" + key + ".wpn");
-            } catch (IOException | JSONException | RuntimeException ex) {
-                weaponJson = null;
-            }
+            JSONObject weaponJson = loadTraversalJson("data/weapons/" + key + ".wpn", false);
             if (weaponJson == null) {
-                try {
-                    weaponJson = Global.getSettings().loadJSON("data/shipsystems/wpn/" + key + ".wpn");
-                } catch (IOException | JSONException | RuntimeException ex) {
-                    weaponJson = null;
-                }
+                weaponJson = loadTraversalJson("data/shipsystems/wpn/" + key + ".wpn", false);
             }
             if (weaponJson != null) {
                 if (weaponJson.has("turretGunSprite")) {
@@ -1815,18 +1814,11 @@ public class TextureData {
                                     continue;
                                 }
                                 if (mirvKey != null) {
-                                    JSONObject mirvJson;
-                                    try {
-                                        mirvJson = Global.getSettings().loadJSON("data/weapons/proj/" + mirvKey + ".proj");
-                                    } catch (IOException | JSONException | RuntimeException ex) {
-                                        mirvJson = null;
-                                    }
+                                    JSONObject mirvJson = loadTraversalJson(
+                                            "data/weapons/proj/" + mirvKey + ".proj", false);
                                     if (mirvJson == null) {
-                                        try {
-                                            mirvJson = Global.getSettings().loadJSON("data/shipsystems/proj/" + mirvKey + ".proj");
-                                        } catch (IOException | JSONException | RuntimeException ex) {
-                                            mirvJson = null;
-                                        }
+                                        mirvJson = loadTraversalJson(
+                                                "data/shipsystems/proj/" + mirvKey + ".proj", false);
                                     }
                                     if (mirvJson != null) {
                                         if (mirvJson.has("sprite")) {
@@ -1853,6 +1845,39 @@ public class TextureData {
             if ((count % 10) == 0) {
                 ShaderModPlugin.refresh();
             }
+        }
+    }
+
+    private static JSONObject loadTraversalJson(String path, boolean merge) {
+        final String cacheKey = (merge ? "merged:" : "default:") + path;
+        if (traversalJsonCache.containsKey(cacheKey)) {
+            return traversalJsonCache.get(cacheKey);
+        }
+        JSONObject loaded;
+        try {
+            loaded = merge
+                    ? Global.getSettings().loadJSON(path, true)
+                    : Global.getSettings().loadJSON(path);
+        } catch (IOException | JSONException | RuntimeException ex) {
+            loaded = null;
+        }
+        traversalJsonCache.put(cacheKey, loaded);
+        return loaded;
+    }
+
+    private static final class AutoGenRequest {
+        final String key;
+        final String spriteName;
+        final ObjectType type;
+        final int frame;
+        final boolean autoGenOverride;
+
+        AutoGenRequest(String key, String spriteName, ObjectType type, int frame, boolean autoGenOverride) {
+            this.key = key;
+            this.spriteName = spriteName;
+            this.type = type;
+            this.frame = frame;
+            this.autoGenOverride = autoGenOverride;
         }
     }
 
@@ -1897,7 +1922,15 @@ public class TextureData {
                     entry = normalSpriteNameToEntry.get(spriteName);
                     if (entry == null) {
                         if (autoGen) {
-                            final SpriteAPI sprite = autoGenNormalMap(spriteName, key, type, frame);
+                            final SpriteAPI sprite;
+                            if (collectAutoGenRequests) {
+                                pendingAutoGen.putIfAbsent(
+                                        getTextureDataKey(key, type, frame),
+                                        new AutoGenRequest(key, spriteName, type, frame, autoGenOverride));
+                                sprite = null;
+                            } else {
+                                sprite = autoGenNormalMap(spriteName, key, type, frame);
+                            }
                             if (sprite != null) {
                                 /* Even if we're not preloading, we do need to load the sprite when establishing the
                                  * cache of auto-generated normal maps.  However, once we have that sprite and have
