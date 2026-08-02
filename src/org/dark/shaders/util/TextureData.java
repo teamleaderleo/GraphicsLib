@@ -69,6 +69,7 @@ public class TextureData {
     private static boolean everTraversedSpecs = false;
     private static boolean everPerformedAutoGen = false;
     private static boolean collectAutoGenRequests = false;
+    private static boolean autoGenRequestsCaptured = false;
 
     private static final Map<String, TextureEntry> materialKeyToEntry = new LinkedHashMap<>(1000);
     private static final Map<String, TextureEntry> materialSpriteNameToEntry = new HashMap<>(1000);
@@ -906,6 +907,7 @@ public class TextureData {
             collectAutoGenRequests = GraphicsLibSettings.autoGenNormals() && isLoadNormal();
             try {
                 autoGenMissingNormalMapsInner(false);
+                autoGenRequestsCaptured = collectAutoGenRequests;
             } finally {
                 collectAutoGenRequests = false;
             }
@@ -916,14 +918,21 @@ public class TextureData {
             }
         }
         if (GraphicsLibSettings.autoGenNormals() && isLoadNormal() && !everPerformedAutoGen) {
-            int count = 0;
-            for (AutoGenRequest request : pendingAutoGen.values()) {
-                mapSpriteToMNSWithAutoGen(request.key, request.spriteName, request.type, request.frame,
-                        true, request.autoGenOverride);
-                count++;
-                if ((count % 100) == 0) {
-                    ShaderModPlugin.refresh();
+            if (autoGenRequestsCaptured) {
+                int count = 0;
+                for (AutoGenRequest request : pendingAutoGen.values()) {
+                    mapSpriteToMNSWithAutoGen(request.key, request.spriteName, request.type, request.frame,
+                            true, request.autoGenOverride);
+                    count++;
+                    if ((count % 100) == 0) {
+                        ShaderModPlugin.refresh();
+                    }
                 }
+            } else {
+                // Auto-generation may be enabled at runtime after the initial linking traversal.
+                // In that case there is no captured request set to replay, so retain the original
+                // full traversal rather than silently generating nothing.
+                autoGenMissingNormalMapsInner(true);
             }
             pendingAutoGen.clear();
             try {
